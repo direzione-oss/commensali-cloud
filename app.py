@@ -13,8 +13,9 @@ st.set_page_config(
 
 # ── CSS Globale ────────────────────────────────────────────────────────────────
 st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
 #MainMenu, footer, header { visibility: hidden; }
 [data-testid="stSidebar"], [data-testid="collapsedControl"] { display: none !important; }
 
@@ -25,7 +26,6 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     min-height: 100vh;
 }
 
-/* Bottoni */
 .stButton > button {
     border-radius: 8px; font-weight: 500;
     border: 1px solid rgba(240,165,0,0.45);
@@ -38,7 +38,6 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     color: #f0a500;
 }
 
-/* Input */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div,
@@ -48,17 +47,14 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     border-radius: 10px !important; color: #f0f4f8 !important;
 }
 
-/* Testi */
 h1, h2, h3, h4 { color: #f0f4f8 !important; }
 p, label, div, span { color: #ccd6e0; }
 hr { border-color: rgba(255,255,255,0.08) !important; }
 
-/* Nav radio orizzontale */
 div[data-testid="stHorizontalBlock"] label {
     color: #8899aa !important; font-weight: 500;
 }
 
-/* Expander */
 .stExpander {
     border: 1px solid rgba(255,255,255,0.10) !important;
     border-radius: 12px !important;
@@ -69,6 +65,7 @@ div[data-testid="stHorizontalBlock"] label {
 ::-webkit-scrollbar-thumb { background: rgba(240,165,0,.35); border-radius: 3px; }
 </style>
 """, unsafe_allow_html=True)
+
 
 # ── AUTH ───────────────────────────────────────────────────────────────────────
 if not check_auth():
