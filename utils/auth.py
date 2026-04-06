@@ -15,6 +15,23 @@ def hash_pw(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
+MAX_LOGIN_ATTEMPTS = 5
+
+
+def _check_rate_limit() -> bool:
+    """Ritorna True se l'utente ha superato il limite tentativi."""
+    attempts = st.session_state.get("_login_attempts", 0)
+    return attempts >= MAX_LOGIN_ATTEMPTS
+
+
+def _increment_attempts():
+    st.session_state["_login_attempts"] = st.session_state.get("_login_attempts", 0) + 1
+
+
+def _reset_attempts():
+    st.session_state["_login_attempts"] = 0
+
+
 def _auth_style():
     st.markdown("""
     <style>
@@ -64,7 +81,9 @@ def login_page():
                 submit   = st.form_submit_button("Accedi →", use_container_width=True)
 
             if submit:
-                if not email or not password:
+                if _check_rate_limit():
+                    st.error(f"⛔ Troppi tentativi falliti ({MAX_LOGIN_ATTEMPTS}). Ricarica la pagina per riprovare.")
+                elif not email or not password:
                     st.error("Inserisci email e password.")
                 else:
                     sb = get_supabase()
@@ -78,6 +97,7 @@ def login_page():
                         if user.get("ruolo") == "disabilitato":
                             st.error("⛔ Account disabilitato. Contatta l'amministratore.")
                         else:
+                            _reset_attempts()
                             st.session_state["user_id"]    = user["id"]
                             st.session_state["user_nome"]  = user.get("nome") or email.split("@")[0]
                             st.session_state["user_email"] = user["email"]
@@ -85,7 +105,9 @@ def login_page():
                             st.session_state["logged_in"]  = True
                             st.rerun()
                     else:
-                        st.error("❌ Credenziali non corrette.")
+                        _increment_attempts()
+                        rimasti = MAX_LOGIN_ATTEMPTS - st.session_state.get("_login_attempts", 0)
+                        st.error(f"❌ Credenziali non corrette. Tentativi rimasti: {max(rimasti, 0)}")
 
             c1, c2 = st.columns(2)
             with c1:
@@ -137,32 +159,12 @@ def login_page():
 
         # ── RESET PASSWORD ────────────────────────────────────
         elif mode == "reset":
-            st.markdown(f"<h3 style='color:{ACCENT};text-align:center;'>🔑 Reimposta Password</h3>", unsafe_allow_html=True)
-
-            with st.form("reset_form"):
-                rst_email = st.text_input("📧 Email registrata")
-                rst_pw1   = st.text_input("🔑 Nuova Password", type="password")
-                rst_pw2   = st.text_input("🔑 Conferma", type="password")
-                submit    = st.form_submit_button("🔄 Reimposta", use_container_width=True)
-
-            if submit:
-                if not rst_email or not rst_pw1:
-                    st.error("Compila tutti i campi.")
-                elif rst_pw1 != rst_pw2:
-                    st.error("Le password non corrispondono.")
-                elif len(rst_pw1) < 6:
-                    st.error("Minimo 6 caratteri.")
-                else:
-                    sb = get_supabase()
-                    user = sb.table("comm_utenti").select("id").eq("email", rst_email.strip().lower()).execute()
-                    if not user.data:
-                        st.error("❌ Email non trovata.")
-                    else:
-                        sb.table("comm_utenti").update({"password_hash": hash_pw(rst_pw1)}).eq("email", rst_email.strip().lower()).execute()
-                        st.success("✅ Password aggiornata!")
-                        st.session_state["auth_mode"] = "login"
-                        st.rerun()
-
+            st.markdown(f"<h3 style='color:{ACCENT};text-align:center;'>🔑 Password dimenticata?</h3>", unsafe_allow_html=True)
+            st.info(
+                "Per motivi di sicurezza il reset password non è disponibile in modo autonomo.\n\n"
+                "Contatta l'amministratore all'indirizzo **direzione@serrastudio.it** "
+                "per richiedere il ripristino del tuo account."
+            )
             if st.button("← Torna al login", key="back_reset", use_container_width=True):
                 st.session_state["auth_mode"] = "login"
                 st.rerun()

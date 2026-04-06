@@ -45,8 +45,10 @@ def show():
         with st.container(border=True):
             c_info, c_role, c_del = st.columns([4, 2, 1])
             with c_info:
+                safe_nome  = (u.get('nome','—') or '—').replace('<','&lt;').replace('>','&gt;')
+                safe_email = (u.get('email','') or '').replace('<','&lt;').replace('>','&gt;')
                 badge = f"<span style='background:rgba(240,165,0,.2);color:{ACCENT};border:1px solid rgba(240,165,0,.4);padding:1px 8px;border-radius:20px;font-size:.72em;'>{u.get('ruolo','utente')}</span>"
-                st.markdown(f"**{u.get('nome','—')}** &nbsp; {badge} &nbsp; `{u['email']}`", unsafe_allow_html=True)
+                st.markdown(f"**{safe_nome}** &nbsp; {badge} &nbsp; `{safe_email}`", unsafe_allow_html=True)
             with c_role:
                 current = u.get("ruolo", "utente")
                 new_role = st.selectbox("Ruolo", ROLES,
