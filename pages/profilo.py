@@ -1,6 +1,6 @@
 """pages/profilo.py — Cambio password"""
 import streamlit as st
-from utils.auth import hash_pw, ADMIN_EMAIL
+from utils.auth import hash_pw, verify_user_pw, ADMIN_EMAIL
 from utils.db import get_supabase
 
 ACCENT = "#f0a500"
@@ -36,8 +36,9 @@ def show():
             st.error("Minimo 6 caratteri.")
         else:
             sb = get_supabase()
-            check = sb.table("comm_utenti").select("id").eq("id", uid).eq("password_hash", hash_pw(old_pw)).execute()
-            if not check.data:
+            check = sb.table("comm_utenti").select("id, password_hash").eq("id", uid).execute()
+            user = check.data[0] if check.data else None
+            if not user or not verify_user_pw(old_pw, user.get("password_hash", ""), email):
                 st.error("❌ Password attuale errata.")
             else:
                 sb.table("comm_utenti").update({"password_hash": hash_pw(new_pw1)}).eq("id", uid).execute()

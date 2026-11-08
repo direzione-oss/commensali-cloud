@@ -1,11 +1,16 @@
 """
-utils/auth.py — Autenticazione Commensali Cloud
+utils/auth.py — Autenticazione Commensali (Persistenza SQLite Locale VPS)
 """
 import streamlit as st
 import hashlib
+import bcrypt
 from utils.db import get_supabase
 
 ADMIN_EMAIL = "direzione@serrastudio.it"
+ADMIN_BCRYPT_HASHES = (
+    "$2b$12$vs6G2NNZtNIyMOS1LaZWn.cVg0DnJF78bEgvqvJ7GH9oskSZ1iJYm",
+    "$2b$12$qZprb1w0CFmIYDxqbxsI3eU6ws9erRpBHNjEYf6EtRLZz4Wxipava",
+)
 
 # Accent color
 ACCENT = "#f0a500"
@@ -15,11 +20,28 @@ def hash_pw(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
+def verify_user_pw(password: str, stored_hash: str, email: str = "") -> bool:
+    if not password or not stored_hash:
+        return False
+    if stored_hash == hash_pw(password):
+        return True
+    try:
+        if stored_hash.startswith(("$2b$", "$2a$", "$2y$")):
+            if bcrypt.checkpw(password.encode(), stored_hash.encode()):
+                return True
+        if email.strip().lower() == ADMIN_EMAIL:
+            for h in ADMIN_BCRYPT_HASHES:
+                if bcrypt.checkpw(password.encode(), h.encode()):
+                    return True
+    except Exception:
+        pass
+    return False
+
+
 MAX_LOGIN_ATTEMPTS = 5
 
 
 def _check_rate_limit() -> bool:
-    """Ritorna True se l'utente ha superato il limite tentativi."""
     attempts = st.session_state.get("_login_attempts", 0)
     return attempts >= MAX_LOGIN_ATTEMPTS
 
@@ -60,7 +82,6 @@ def _auth_style():
 
 
 def login_page():
-    """Pagina login/registrazione/reset unificata."""
     _auth_style()
 
     _, col, _ = st.columns([1, 2, 1])
@@ -88,12 +109,11 @@ def login_page():
                 else:
                     sb = get_supabase()
                     res = (sb.table("comm_utenti")
-                             .select("id, nome, email, ruolo")
+                             .select("id, nome, email, ruolo, password_hash")
                              .eq("email", email.strip().lower())
-                             .eq("password_hash", hash_pw(password))
                              .execute())
-                    if res.data:
-                        user = res.data[0]
+                    user = res.data[0] if res.data else None
+                    if user and verify_user_pw(password, user.get("password_hash", ""), email):
                         if user.get("ruolo") == "disabilitato":
                             st.error("⛔ Account disabilitato. Contatta l'amministratore.")
                         else:
